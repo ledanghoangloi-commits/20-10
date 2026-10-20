@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>20/10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fira+Code:wght@500&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        .font-sans { font-family: 'Quicksand', sans-serif; }
+        .font-hand { font-family: 'Caveat', cursive; }
+        
+        /* Backgrounds */
+        .bg-terminal { background-color: #0c0c0c; }
+        .bg-pastel { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); transition: all 0.5s ease; }
+
+        /* Stage transitions */
+        .stage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-in-out; z-index: 10; }
+        .hidden-stage { opacity: 0; pointer-events: none; z-index: -1; }
+
+        /* Terminal Cursor */
+        .cursor { display: inline-block; width: 10px; height: 1.2em; background-color: #00ff00; animation: blink 1s step-end infinite; vertical-align: bottom; ml-1; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Glassmorphism Card */
+        .glass { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); }
+
+        /* Polaroid */
+        .polaroid { 
+            position: absolute; background: white; padding: 10px 10px 30px 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); 
+            transform: rotate(-5deg); cursor: grab; z-index: 50; user-select: none; max-width: 200px;
+            transition: transform 0.2s;
+        }
+        .polaroid:active { cursor: grabbing; transform: rotate(0deg) scale(1.05); z-index: 100; }
+        .polaroid-tape { position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 25px; background: rgba(255, 255, 255, 0.6); box-shadow: 0 1px 3px rgba(0,0,0,0.2); backdrop-filter: blur(2px); }
+
+        /* Click Particles */
+        .particle { position: absolute; pointer-events: none; transform: translate(-50%, -50%); animation: floatFade 1.2s forwards ease-out; z-index: 30; font-size: 1.5rem; }
+        @keyframes floatFade { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -150px) scale(1.5); opacity: 0; } }
+
+        /* Troll Mode Animations */
+        .shake-screen { animation: shake 0.4s infinite; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        
+        .disco-bg { animation: disco 0.5s infinite; }
+        @keyframes disco {
+            0% { background-color: #ff0000; } 25% { background-color: #00ff00; }
+            50% { background-color: #0000ff; } 75% { background-color: #ff00ff; }
+            100% { background-color: #ffff00; }
+        }
+
+        .rain-emoji { position: absolute; top: -50px; font-size: 2rem; pointer-events: none; animation: fall linear forwards; z-index: 90; }
+        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+
+        /* Custom Alert Box */
+        .custom-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff4757; color: white; padding: 15px 25px; border-radius: 10px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s, top 0.3s; }
+        .custom-alert.show { opacity: 1; top: 40px; pointer-events: auto; }
+
+    </style>
+</head>
+<body class="bg-terminal text-white font-sans" id="main-body">
+
+    <!-- Custom Alert (Replaces window.alert) -->
+    <div id="alert-box" class="custom-alert font-sans">
+        <span id="alert-text">Thông báo</span>
+    </div>
+
+    <!-- STAGE 1: Fake Terminal -->
+    <div id="stage1" class="stage bg-terminal text-green-400 font-mono text-left p-4 sm:p-10 w-full items-start justify-start">
+        <div id="terminal-content" class="text-sm md:text-lg lg:text-xl w-full max-w-3xl"></div>
+    </div>
+
+    <!-- STAGE 2: Security Modal -->
+    <div id="stage2" class="stage bg-gray-900 hidden-stage px-4">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-md text-center">
+            <div class="text-5xl mb-4">🔒</div>
+            <h2 class="text-2xl font-bold mb-2 text-white">Hệ thống bảo mật 2 lớp</h2>
+            <p class="text-gray-400 mb-6 text-sm">Vui lòng xác minh danh tính để biết thêm chi tiết.</p>
+            
+            <label class="block text-left text-sm font-semibold text-gray-300 mb-2">Ai là người đẹp zai nhất thế giới?</label>
+            <input type="text" id="security-input" class="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white focus:outline-none focus:border-green-500 mb-4" placeholder="Nhập tên vào đây..." onkeypress="handleEnter(event)">
+            
+            <button onclick="checkSecurity()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+                Mở Khóa
+            </button>
+        </div>
+    </div>
+
+    <!-- STAGE 3: Main Card -->
+    <div id="stage3" class="stage hidden-stage">
+        <!-- Interactive Background Area -->
+        <div id="interactive-bg" class="absolute inset-0 w-full h-full cursor-pointer z-0"></div>
+
+        <!-- Draggable Polaroid -->
+        <div id="polaroid" class="polaroid top-10 left-4 md:left-20 lg:left-32">
+            <div class="polaroid-tape"></div>
+            <img src="d:\qanh.jpg" alt="Qanhh" class="w-full h-auto pointer-events-none border border-gray-100 rounded-sm">
+            <p class="font-hand text-2xl text-center text-gray-800 mt-2 pointer-events-none">Idol toptop 🌸</p>
+        </div>
+
+        <!-- Glass Card -->
+        <div id="main-card" class="glass w-11/12 max-w-2xl rounded-3xl p-6 md:p-10 relative z-20 text-gray-800 flex flex-col items-center">
+            <h1 class="text-4xl md:text-5xl font-hand font-bold text-pink-600 mb-4 drop-shadow-sm text-center">
+                Happy 20/10! 💖
+            </h1>
+            
+            <div class="w-full min-h-[150px] text-lg md:text-xl font-medium leading-relaxed mb-6">
+                <span id="typewriter-text" class="text-gray-700"></span><span class="cursor" style="background-color: #ec4899; height: 1em;"></span>
+            </div>
+
+            <div class="w-full flex justify-end items-center mt-4">
+                <div class="text-right mr-4">
+                    <p class="text-sm text-gray-500">Người gửi</p>
+                    <p class="font-hand text-3xl font-bold text-pink-500">Lợi nè</p>
+                </div>
+            </div>
+
+            <!-- Troll Button -->
+            <button id="troll-btn" class="mt-8 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-110 animate-pulse uppercase tracking-wider border-2 border-white">
+                ⛔ Đừng bấm ⛔
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- UTILITIES ---
+        function showAlert(msg) {
+            const alertBox = document.getElementById('alert-box');
+            const alertText = document.getElementById('alert-text');
+            alertText.innerText = msg;
+            alertBox.classList.add('show');
+            setTimeout(() => { alertBox.classList.remove('show'); }, 3000);
+        }
+
+        function switchStage(hideId, showId, bgClass) {
+            document.getElementById(hideId).classList.add('hidden-stage');
+            setTimeout(() => {
+                document.getElementById(showId).classList.remove('hidden-stage');
+                if(bgClass) {
+                    document.getElementById('main-body').className = bgClass;
+                }
+            }, 800);
+        }
+
+        // --- STAGE 1: TERMINAL ---
+        const terminalLines = [
+            "Initializing System...",
+            "Establishing secure connection...",
+            "Bypassing firewalls (100%)...",
+            "Target identified: Qanh Qanh.",
+            "Loading 20/10 Protocol...",
+            "Access Granted."
+        ];
+        
+        async function typeTerminal() {
+            const container = document.getElementById('terminal-content');
+            
+            for (let i = 0; i < terminalLines.length; i++) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'mb-1';
+                container.appendChild(lineDiv);
+                
+                const text = terminalLines[i];
+                for (let j = 0; j < text.length; j++) {
+                    lineDiv.innerHTML = text.substring(0, j + 1) + '<span class="cursor"></span>';
+                    await new Promise(r => setTimeout(r, Math.random() * 40 + 20)); // Typing speed
+                }
+                lineDiv.innerHTML = text; // Remove cursor from finished line
+                await new Promise(r => setTimeout(r, 400)); // Pause between lines
+            }
+            
+            // Wait a bit, then switch to stage 2
+            setTimeout(() => {
+                switchStage('stage1', 'stage2', 'bg-gray-900 font-sans');
+            }, 1000);
+        }
+
+        // --- STAGE 2: SECURITY ---
+        function handleEnter(e) {
+            if(e.key === 'Enter') checkSecurity();
+        }
+
+        function checkSecurity() {
+            const input = document.getElementById('security-input').value.trim().toLowerCase();
+            // Accept variations of "Lợi"
+            if (input === 'lợi' || input === 'loi' || input === 'từ lợi' || input === 'tu loi' || input === 'lợi đẹp zai') {
+                document.getElementById('security-input').blur(); // hide keyboard on mobile
+                switchStage('stage2', 'stage3', 'bg-pastel font-sans');
+                setTimeout(startMainCard, 1000); // Start typewriter after transition
+            } else {
+                showAlert('Sai rồi! Nghĩ kỹ lại xem ai đẹp zai nhất? 😒');
+                document.getElementById('security-input').value = '';
+                document.getElementById('security-input').focus();
+            }
+        }
+
+        // --- STAGE 3: MAIN CARD ---
+        const messageText = "Chúc Qanh 20/10 thật rạng rỡ nha! Mong Qanh hay ăn chóng lớn, luôn xinh đẹp như tiên nữ, luôn cười tươi như hoa, luôn may mắn và thuận lợi trong học tập và công việc nhaaa 🌸💖";
+        
+        async function startMainCard() {
+            const textEl = document.getElementById('typewriter-text');
+            for (let i = 0; i < messageText.length; i++) {
+                textEl.innerHTML += messageText.charAt(i);
+                await new Promise(r => setTimeout(r, Math.random() * 30 + 30));
+            }
+        }
+
+        // 1. Draggable Polaroid
+        const polaroid = document.getElementById('polaroid');
+        let isDragging = false, currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+
+        // Mouse Events
+        polaroid.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+        
+        // Touch Events
+        polaroid.addEventListener('touchstart', dragStart, {passive: false});
+        document.addEventListener('touchmove', drag, {passive: false});
+        document.addEventListener('touchend', dragEnd);
+
+        function dragStart(e) {
+            initialX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX) - xOffset;
+            initialY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY) - yOffset;
+            if (e.target === polaroid || polaroid.contains(e.target)) {
+                isDragging = true;
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault(); // Prevent scrolling on mobile
+                currentX = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - initialX;
+                currentY = (e.type === 'touchmove' ? e.touches[0].clientY : e.clientY) - initialY;
+                xOffset = currentX;
+                yOffset = currentY;
+                setTranslate(currentX, currentY, polaroid);
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            // override the CSS transform rotate for dragging
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) scale(1.05)`;
+        }
+
+        function dragEnd(e) {
+            if(isDragging) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                // revert to default rotation with translation
+                polaroid.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) rotate(-5deg)`;
+            }
+        }
+
+        // 2. Interactive Click Background
+        const bgArea = document.getElementById('interactive-bg');
+        bgArea.addEventListener('click', (e) => {
+            const items = ['💖', '🌸', '✨', '🌷'];
+            const el = document.createElement('div');
+            el.innerText = items[Math.floor(Math.random() * items.length)];
+            el.classList.add('particle');
+            el.style.left = `${e.clientX}px`;
+            el.style.top = `${e.clientY}px`;
+            el.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 40 - 20}deg)`;
+            document.getElementById('stage3').appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        });
+
+        // 3. Troll Mode
+        const trollBtn = document.getElementById('troll-btn');
+        const mainBody = document.getElementById('main-body');
+        let trollInterval;
+
+        trollBtn.addEventListener('click', () => {
+            // Change UI
+            trollBtn.innerText = "ĐÃ BẢO ĐỪNG BẤM MÀAAA";
+            document.querySelector('#main-card h1').innerText = "!!! 🚨";
+            
+            // Add Shake and Disco classes
+            mainBody.classList.remove('bg-pastel');
+            mainBody.classList.add('disco-bg', 'shake-screen');
+            
+            // Start Emoji Rain
+            if(!trollInterval) {
+                trollInterval = setInterval(createRainEmoji, 100);
+                
+                // Auto stop after 8 seconds to prevent browser crash
+                setTimeout(() => {
+                    clearInterval(trollInterval);
+                    trollInterval = null;
+                    mainBody.classList.remove('disco-bg', 'shake-screen');
+                    mainBody.classList.add('bg-pastel');
+                    trollBtn.innerText = "Hết hồn chưa? 🤡";
+                    document.querySelector('#main-card h1').innerText = "Happy 20/10! 💖";
+                }, 8000);
+            }
+        });
+
+        function createRainEmoji() {
+            const emojis = ['🤡', '🐸', '💃', '🤪', '💸'];
+            const el = document.createElement('div');
+            el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            el.classList.add('rain-emoji');
+            el.style.left = `${Math.random() * 100}vw`;
+            el.style.animationDuration = `${Math.random() * 2 + 1.5}s`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            typeTerminal();
+        };
+
+    </script>
+</body>
+</html>
